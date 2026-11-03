@@ -1,0 +1,19 @@
+{
+  "challenge_module": "ElboimSlyChallenges.ElboimSly.Challenge",
+  "solution_module": "ElboimSlyChallenges.ElboimSly.Solution",
+  "theorem_names": [
+    "ElboimSly.existsUnique_trajectories",
+    "ElboimSly.Challenge.interchangePi_bijective",
+    "ElboimSly.Challenge.poisson_kmt_coupling",
+    "ElboimSly.Challenge.x1theta_coupling",
+    "ElboimSly.Challenge.ind_main",
+    "ElboimSly.Challenge.root_R1",
+    "ElboimSly.Challenge.root_R2"
+  ],
+  "permitted_axioms": [
+    "propext",
+    "Quot.sound",
+    "Classical.choice"
+  ],
+  "enable_nanoda": true
+}

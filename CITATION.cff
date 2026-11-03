@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+message: "If you use this formalization, please cite it as below."
+title: "Infinite cycles in the interchange process in five dimensions: a Lean 4 formalization of Elboim and Sly"
+type: software
+repository-code: "https://github.com/scottnarmstrong/elboim-sly"
+abstract: >-
+  A machine-checked Lean 4 and Mathlib formalization of D. Elboim and A. Sly,
+  Infinite cycles in the interchange process in five dimensions
+  (arXiv:2211.17023). For d >= 5 and beta large, the interchange permutation
+  pi_beta of Z^d almost surely has an infinite cycle, and the cycle of the
+  origin is finite with probability less than 2/beta. The multiscale induction
+  (Theorem 3.2) and every result of the paper it depends on are proved, together
+  with every cited input: Poisson point processes, the construction of the
+  process on the infinite lattice, the zero-one law, random walk and Brownian
+  motion estimates, and strong approximations replacing Zaitsev's
+  multidimensional KMT theorem. The library contains no sorry and no custom
+  axiom.
+authors:
+  - family-names: Armstrong
+    given-names: Scott
+  - family-names: Bou-Rabee
+    given-names: Ahmed
+keywords:
+  - Lean
+  - mathlib
+  - formal verification
+  - probability
+  - interchange process
+  - random stirring
+  - infinite cycles
+  - strong approximation
+license: Apache-2.0
+references:
+  - type: article
+    title: "Infinite cycles in the interchange process in five dimensions"
+    authors:
+      - family-names: Elboim
+        given-names: Dor
+      - family-names: Sly
+        given-names: Allan
+    year: 2022
+    url: "https://arxiv.org/abs/2211.17023"
+    notes: "The paper formalized here (v3, 2024)."

@@ -1,0 +1,180 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mathlib-initiative/formalization.yaml/main/schema/formalization.schema.json
+version: "v0.4"
+
+project:
+  name: "Infinite cycles in the interchange process in five dimensions (Elboim-Sly), formalized in Lean 4"
+  description: >-
+    A complete Lean 4 formalization of D. Elboim and A. Sly, Infinite cycles in
+    the interchange process in five dimensions (arXiv:2211.17023v3). In the
+    interchange process on Z^d, each edge carries an independent rate-one
+    Poisson clock and swaps the particles at its endpoints when it rings; run
+    for time beta, it yields a random permutation pi_beta of Z^d. Toth
+    conjectured that pi_beta has infinite cycles for d >= 3 and beta large;
+    Elboim and Sly proved this for d >= 5. The library proves their Theorem 1
+    (for d >= 5 and beta large, pi_beta almost surely has an infinite cycle),
+    the quantitative bound from its proof (the cycle of the origin is finite
+    with probability less than 2/beta), and the multiscale induction behind
+    both, Theorem 3.2, whose hypotheses (H1)-(H5) control relaxed times, local
+    probabilities, displacement, a Brownian coupling and the proximity of two
+    walks for the cyclic random walk at every scale. The model is constructed
+    on the infinite lattice (Poisson clocks, existence and uniqueness of
+    particle trajectories, bijectivity of pi_s), and nothing the paper cites is
+    assumed: Poisson point processes and their exploration, the zero-one law,
+    continuous-time random walk estimates, Brownian motion and its hitting and
+    escape estimates, Freedman's inequality and the strong approximations are
+    proved from Mathlib. Zaitsev's multidimensional KMT theorem, the paper's one
+    external input, is replaced by two couplings proved in the library: a KMT
+    coupling for Poisson increments and a strong approximation for bounded
+    sign-symmetric vectors; the exponent of the Brownian coupling in (H4)
+    becomes 41/100 instead of 2/5, and Theorem 1 is unchanged. Every statement
+    is checked against a Mathlib-only restatement with leanprover/comparator,
+    and the library uses only Lean's standard axioms.
+  authors:
+    - "Scott Armstrong"
+    - "Ahmed Bou-Rabee"
+  responsible_maintainers:
+    - "Scott Armstrong"
+    - "Ahmed Bou-Rabee"
+  license: "Apache-2.0"
+  funding:
+    - "Scott Armstrong was supported by the European Research Council (ERC) under the European Union's Horizon Europe research and innovation programme, grant agreement No. 101200828."
+
+classification:
+  arxiv: ["math.PR", "math-ph"]
+  msc2020: ["60K35", "82B20", "60G50", "60J65"]
+
+sources:
+  - title: "Infinite cycles in the interchange process in five dimensions"
+    authors:
+      - "Dor Elboim"
+      - "Allan Sly"
+    type: "paper"
+    relationship: "formalizes"
+    note: >-
+      arXiv:2211.17023 (v3, 2 February 2024, whose numbering the formalization
+      cites). The 38 errata and 24 deviations found are listed in
+      docs/ERRATA-AND-DEVIATIONS.md; none affects Theorem 1.
+    author_endorsement: "not-contacted"
+  - title: "An approximation of partial sums of independent RV'-s, and the sample DF. I"
+    authors:
+      - "Janos Komlos"
+      - "Peter Major"
+      - "Gabor Tusnady"
+    type: "paper"
+    relationship: "background"
+    note: >-
+      Z. Wahrscheinlichkeitstheorie verw. Gebiete 32 (1975), 111-131. The case of
+      centred Poisson increments of Theorem 1 (error C log N) is formalized and
+      proved (ElboimSly.poisson_kmt_coupling) by a dyadic coupling with a
+      Tusnady-type quantile bound for Bin(m, 1/2), not by the paper's route.
+    author_endorsement: "not-contacted"
+  - title: "Multidimensional version of the results of Komlos, Major and Tusnady for vectors with finite exponential moments"
+    authors:
+      - "Andrei Yu. Zaitsev"
+    type: "paper"
+    relationship: "background"
+    note: >-
+      ESAIM: Probability and Statistics 2 (1998). The source of Theorem 7.5 of
+      Elboim-Sly. It is not formalized and not used: the induction step uses the
+      strong approximation X1theta (ElboimSly.x1theta_coupling) instead, with the
+      exponent of (H4) raised from 2/5 to 41/100.
+    author_endorsement: "not-contacted"
+  - title: "Random Walk: A Modern Introduction"
+    authors:
+      - "Gregory F. Lawler"
+      - "Vlada Limic"
+    type: "book"
+    relationship: "background"
+    note: >-
+      Cambridge University Press (2010). Consulted for the dyadic coupling scheme
+      (Chapter 7) and the random-walk estimates; the estimates the paper uses are
+      proved in the library.
+    author_endorsement: "not-contacted"
+
+status:
+  scope: >-
+    Formalized and proved: Theorem 1 of Elboim-Sly (ElboimSly.root_R2), the
+    bound P(the cycle of the origin is finite) < 2/beta from its proof
+    (ElboimSly.root_R1), Theorem 3.2 with (H1)-(H5) (ElboimSly.ind_main), and
+    every result of Sections 2-9 they depend on; existence and uniqueness of
+    particle trajectories and bijectivity of pi_s on the infinite lattice; the
+    KMT coupling for Poisson increments (A1) and the strong approximation X1theta
+    that replaces Theorem 7.5. Theorem 3.2 is formalized with the exponent 41/100
+    in (H4) instead of 2/5 and with n_0 >= 10 explicit; Theorem 1 is as printed.
+    Ten further statements that the main theorems do not use are also proved
+    (among them Lemma 4.1 in the paper's own form and the Markov property of the
+    cyclic walk). The introduction's discussion is not formalized.
+  sorry_count: 0
+  axioms: ["propext", "Classical.choice", "Quot.sound"]
+
+automation:
+  methods:
+    - method: "agent"
+      models:
+        - "claude-opus-5-5"
+        - "claude-sonnet-5-5"
+      framework: >-
+        Claude Code (Anthropic). Claude Opus 5.5 coordinated the work: it expanded
+        the paper into a statement-by-statement outline, drafted the exact
+        statements, planned bounded proof tasks, assigned them to parallel agents
+        and carried out statement and interface audits. Most Lean proofs were
+        written by Claude Sonnet 5.5 subagents.
+      tool_setup: >-
+        Lake builds with Lean and Mathlib v4.35.0. The seven main statements and
+        the 57 definitions they use were approved by the authors before their
+        proofs, after a separate agent audit against the paper. The Mathlib-only
+        restatement was checked with leanprover/comparator (Lean kernel and NanoDa
+        replay).
+      cost:
+        hardware: "one 16-CPU Linux machine"
+  notes: >-
+    Lean code was written with the listed AI models under the authors'
+    supervision. The Lean kernel checks the formal proofs; the library contains
+    no sorry and no custom axiom.
+
+review:
+  status: "author-approved-statements"
+  reviewers:
+    - "Scott Armstrong"
+    - "Ahmed Bou-Rabee"
+  notes: >-
+    The authors approved the main statements. Separate agent audits checked
+    them against the paper before approval. This is not external peer review.
+
+alignment:
+  namespace: "ElboimSly"
+  statements:
+    - source: "Elboim-Sly, Theorem 1"
+      lean: "ElboimSly.root_R2"
+      module: "ElboimSly.Frozen.Theorems.RootR2"
+      status: "proved"
+    - source: "Elboim-Sly, proof of Theorem 1: P(the cycle of the origin is finite) < 2/beta"
+      lean: "ElboimSly.root_R1"
+      module: "ElboimSly.Frozen.Theorems.RootR1"
+      status: "proved"
+    - source: "Elboim-Sly, Theorem 3.2 (exponent 41/100 in (H4))"
+      lean: "ElboimSly.ind_main"
+      module: "ElboimSly.Frozen.Theorems.IndMain"
+      status: "proved"
+    - source: "Elboim-Sly, Section 2: existence and uniqueness of particle trajectories"
+      lean: "ElboimSly.existsUnique_trajectories"
+      module: "ElboimSly.Frozen.Theorems.ExistsUniqueTrajectories"
+      status: "proved"
+    - source: "Elboim-Sly, Section 2: pi_s is a bijection of Z^d"
+      lean: "ElboimSly.interchangePi_bijective"
+      module: "ElboimSly.Frozen.Theorems.InterchangePiBijective"
+      status: "proved"
+    - source: "Komlos-Major-Tusnady, Theorem 1 for centred Poisson increments (A1)"
+      lean: "ElboimSly.poisson_kmt_coupling"
+      module: "ElboimSly.Frozen.Theorems.PoissonKmtCoupling"
+      status: "proved"
+    - source: "Strong approximation for bounded sign-symmetric vectors (X1theta), replacing Elboim-Sly Theorem 7.5"
+      lean: "ElboimSly.x1theta_coupling"
+      module: "ElboimSly.Frozen.Theorems.X1ThetaCoupling"
+      status: "proved"
+
+acknowledgements: >-
+  Built on Lean 4, Mathlib, Lake, leanprover/comparator and NanoDa. Scott
+  Armstrong was supported by the European Research Council (ERC) under the
+  European Union's Horizon Europe research and innovation programme, grant
+  agreement No. 101200828.
