@@ -10,7 +10,9 @@ a git checkout, every file outside `.git` and `.lake`) must:
 - not be a symbolic link.
 
 Every `comparator.json` must name existing Challenge and Solution modules that
-declare each of its `theorem_names`. Its `permitted_axioms` may only name the
+declare each of its `theorem_names` in their own source; the Challenge may import
+no module of the repository (only Lean core and Mathlib, Tau Ceti or CSLib). Its
+`permitted_axioms` may only name the
 standard three, and `enable_nanoda` must be true. The Challenge file has at
 most 1,000 lines and 100 KiB; above 300 lines or 32 KiB is reported for review.
 
@@ -260,24 +262,33 @@ def check_comparator(root: Path, config: Path, errors: list[str], warnings: list
             continue
         declared = {name for kind, name, exported in declarations(text)
                     if exported and kind in {"theorem", "lemma"}}
-        # A listed theorem may also be declared in a repository module that this module imports
-        # (transitively): a definition of the Challenge can depend on a theorem, as `interchangePi`
-        # is defined from `existsUnique_trajectories`, and then that theorem must precede it.
-        seen, todo = set(), [module]
-        while todo:
-            m = todo.pop()
-            f = root / (m.replace(".", "/") + ".lean")
-            if m in seen or not f.is_file(): continue
-            seen.add(m)
-            src = f.read_text(encoding="utf-8")
-            if m != module:
-                declared |= {name for kind, name, exported in declarations(src)
-                             if exported and kind in {"theorem", "lemma"}}
-            todo += re.findall(r"(?m)^\s*(?:public\s+)?(?:meta\s+)?import\s+(?:all\s+)?(\S+)", src)
+        if key == "solution_module":
+            # The Solution may obtain a listed theorem from a repository module it imports
+            # (transitively), as when the library itself proves it under that name. The Challenge may
+            # not: each listed name must be declared in the Challenge source.
+            seen, todo = set(), [module]
+            while todo:
+                m = todo.pop()
+                f = root / (m.replace(".", "/") + ".lean")
+                if m in seen or not f.is_file(): continue
+                seen.add(m)
+                src = f.read_text(encoding="utf-8")
+                if m != module:
+                    declared |= {name for kind, name, exported in declarations(src)
+                                 if exported and kind in {"theorem", "lemma"}}
+                todo += re.findall(r"(?m)^\s*(?:public\s+)?(?:meta\s+)?import\s+(?:all\s+)?(\S+)", code_mask(src))
         for name in names:
             if name not in declared:
                 errors.append(f"{rel}: {key} {module} does not declare public theorem {name}")
         if key == "challenge_module":
+            # Palomar: every file in the Challenge's transitive import closure is Lean core or a
+            # canonical library (Mathlib, Tau Ceti, CSLib) with its pinned dependencies. No module of
+            # this repository may be imported, so every definition the statements use is in the
+            # Challenge file itself; Palomar compiles it alone, against the dependencies only.
+            for imp in re.findall(r"(?m)^\s*(?:public\s+)?(?:meta\s+)?import\s+(?:all\s+)?(\S+)", code_mask(text)):
+                if (root / (imp.replace(".", "/") + ".lean")).is_file() or (root / imp.replace(".", "/")).is_dir():
+                    errors.append(f"{rel}: Challenge {module} imports {imp}, a module of this repository; "
+                                  "the Challenge may import only Lean core and Mathlib (or Tau Ceti, CSLib)")
             lines, size = len(text.splitlines()), len(text.encode("utf-8"))
             if lines > CHALLENGE_MAX_LINES or size > CHALLENGE_MAX_BYTES:
                 errors.append(f"{rel}: Challenge has {lines} lines and {size} bytes "

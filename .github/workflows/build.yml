@@ -69,13 +69,13 @@ jobs:
           fi
 
       # The comparator challenge, its solution and the axiom audit (not default targets). The
-      # challenge contains one intentional `sorry` per theorem; any other warning fails.
+      # challenge contains one intentional `sorry` per theorem (seven); any other warning fails.
       - name: Build the challenge library
         run: |
           set -o pipefail
           lake build ElboimSlyChallenges 2>&1 | tee audit-build.log
           if grep -E "^(warning|error):" audit-build.log \
-               | grep -vE "ElboimSlyChallenges/ElboimSly/(Challenge|Defs/ExistsUniqueTrajectories)\.lean:[0-9]+:[0-9]+: declaration uses .sorry."; then
+               | grep -vE "ElboimSlyChallenges/ElboimSly/Challenge\.lean:[0-9]+:[0-9]+: declaration uses .sorry."; then
             echo "A warning, an error or a sorry outside the challenge statements was reported."
             exit 1
           fi

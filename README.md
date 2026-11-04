@@ -181,12 +181,14 @@ Two independent checks accompany the build:
 - **Axiom audit.** `scripts/check_axioms.py` checks that each of the seven theorems above depends only
   on `propext`, `Classical.choice` and `Quot.sound`.
 - **Comparator.** [`ElboimSlyChallenges/ElboimSly/Challenge.lean`](ElboimSlyChallenges/ElboimSly/Challenge.lean)
-  restates the seven theorems, in the namespace `ElboimSly.Challenge`, from Mathlib alone. The 57
-  definitions they use are restated one per file in `Defs/`, which imports Mathlib and itself only.
-  [leanprover/comparator](https://github.com/leanprover/comparator) checks that the theorems proved
-  by the library (`Solution.lean`) have exactly these statements. It compares the statements together
-  with their whole dependency closure, checks the axioms, and replays the proofs in the Lean kernel
-  and in the independent NanoDa kernel.
+  restates the seven theorems from Mathlib alone, together with the 57 definitions they use, in a
+  single file whose only import is Mathlib. Each definition has the text of the library's definition
+  of the same name; all are in the namespace `ElboimSly.Challenge`. `Solution.lean` repeats the
+  definitions and proves each theorem from the library's theorem of the same name.
+  [leanprover/comparator](https://github.com/leanprover/comparator) checks that the solution proves
+  exactly the challenge's statements. It compares the statements together with their whole
+  dependency closure, checks the axioms, and replays the proofs in the Lean kernel and in the
+  independent NanoDa kernel.
 
 ## Building
 

@@ -2,7 +2,7 @@
   "challenge_module": "ElboimSlyChallenges.ElboimSly.Challenge",
   "solution_module": "ElboimSlyChallenges.ElboimSly.Solution",
   "theorem_names": [
-    "ElboimSly.existsUnique_trajectories",
+    "ElboimSly.Challenge.existsUnique_trajectories",
     "ElboimSly.Challenge.interchangePi_bijective",
     "ElboimSly.Challenge.poisson_kmt_coupling",
     "ElboimSly.Challenge.x1theta_coupling",

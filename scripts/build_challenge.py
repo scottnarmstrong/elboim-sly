@@ -3,12 +3,11 @@
 
 Usage, from the repository root: python3 -I scripts/build_challenge.py
 
-For every file under ElboimSly/Frozen/ this writes a mirror under
-ElboimSlyChallenges/ElboimSly/ (Defs/ and Theorems/) with the same text and the same Mathlib imports,
-so that every definition elaborates exactly as in the library (a single file importing the union of
-the imports can resolve instances along different paths, which comparator rightly rejects). In the
-mirrors, imports of frozen files point to their mirrors, imports of the library's proofs are
-dropped, and each theorem's proof is `sorry`. Challenge.lean imports the seven theorem mirrors.
+Writes ElboimSlyChallenges/ElboimSly/Challenge.lean, a single file whose only import is Mathlib:
+every frozen definition (and `existsUnique_trajectories`, from which `interchangePi` is defined),
+in dependency order, with the same text as in the library, followed by the seven theorems in the
+namespace `ElboimSly.Challenge`. Every proof is `sorry`. Solution.lean states the same theorems and
+proves them from the library.
 """
 import pathlib, re, shutil
 
@@ -19,7 +18,7 @@ HEADER = ("/-\nCopyright (c) 2026 Scott Armstrong and Ahmed Bou-Rabee. All right
           "Released under Apache 2.0 license as described in the file LICENSE.\n"
           "Authors: Scott Armstrong, Ahmed Bou-Rabee\n-/\n")
 
-for sub in ("Defs", "Theorems"):  # Theorems/ is no longer generated
+for sub in ("Defs", "Theorems"):  # no longer generated: the challenge is a single file
     if (DST / sub).exists(): shutil.rmtree(DST / sub)
 # declared name -> definition file, for theorem files that saw the definitions only through their proof
 DEFNAME = re.compile(r"^\s*(?:@\[[^\]]*\]\s*)?(?:noncomputable\s+)?(?:def|abbrev|structure|class|inductive|instance)\s+([^\s:({\[]+)", re.M)
@@ -34,23 +33,35 @@ for f in (SRC / "Defs").glob("*.lean"):
         m = IMP.match(l)
         if m and m.group(2).startswith("ElboimSly.Frozen.Theorems."):
             def_imported.add(m.group(2)[len("ElboimSly.Frozen.Theorems."):])
-def mirror_def(rel, lines):
+def def_block(lines, keep_proof=False):
+    """The part of a frozen definition file after its module docstring, proofs replaced by `sorry`
+    (kept, for the solution, when `keep_proof`)."""
+    i = next(k for k, l in enumerate(lines) if l.startswith("/-!"))
+    while not lines[i].rstrip().endswith("-/"): i += 1
     out, skip = [], False
-    for line in lines:
-        m = IMP.match(line)
-        if m and m.group(2).startswith("ElboimSly.Provider."):
-            out.append("public import Mathlib"); continue
-        if m and m.group(2).startswith("ElboimSly.Frozen."):
-            line = f"{m.group(1) or ''}import ElboimSlyChallenges.ElboimSly.Defs." + m.group(2).split(".")[-1]
+    for line in lines[i + 1:]:
         if line.startswith("-- FROZEN_ANCHOR_PROOF_BEGIN"):
-            out.append("  sorry"); skip = True; continue
+            if not keep_proof: out.append("  sorry")
+            skip = not keep_proof; continue
         if line.startswith("-- FROZEN_ANCHOR_PROOF_END"): skip = False; continue
         if skip or line.startswith("-- FROZEN_ANCHOR_"): continue
         out.append(line)
-    body = "\n".join(out)
-    body = re.sub(r"\A/-.*?-/\n", HEADER, body, count=1, flags=re.S)
-    dst = DST / "Defs" / rel.name; dst.parent.mkdir(parents=True, exist_ok=True)
-    dst.write_text(body, encoding="utf8")
+    # `public section / opens / namespace ElboimSly / body / end ElboimSly / end` becomes
+    # `section / opens / body / end` inside one `namespace ElboimSly.Challenge` (opens and variables
+    # stay scoped)
+    out = [l for l in "\n".join(out).strip().split("\n") if l.strip()]
+    assert out[0] == "public section" and out[-1] == "end" and out[-2] == "end ElboimSly", out[:2] + out[-2:]
+    assert out.count("namespace ElboimSly") == 1, out[:6]
+    out = ["section"] + [l for l in out[1:-2] if l != "namespace ElboimSly"] + ["end"]
+    return "\n".join(out)
+
+def_blocks, sol_blocks, def_deps, def_provs = {}, {}, {}, set()
+def mirror_def(rel, lines):
+    def_blocks[rel.stem] = def_block(lines)
+    sol_blocks[rel.stem] = def_block(lines, keep_proof=True)
+    def_provs.update(m.group(2) for l in lines if (m := IMP.match(l)) and m.group(2).startswith("ElboimSly.Provider."))
+    def_deps[rel.stem] = {m.group(2).split(".")[-1] for l in lines if (m := IMP.match(l))
+                          and m.group(2).startswith(("ElboimSly.Frozen.Defs.", "ElboimSly.Frozen.Theorems."))}
 
 
 defs_done = 0
@@ -97,39 +108,55 @@ doc_c = """
 # Challenge: infinite cycles in the interchange process in five dimensions
 
 The main results of D. Elboim and A. Sly, *Infinite cycles in the interchange process in five
-dimensions* (arXiv:2211.17023v3), stated from Mathlib alone, in the namespace `ElboimSly.Challenge`:
-Theorem 1 (`root_R2`), the bound `P(the cycle of 0 is finite) < 2/β` from its proof (`root_R1`), and
-Theorem 3.2 with (H1)–(H5) (`ind_main`); and four theorems behind them: existence and uniqueness of
-particle trajectories (`existsUnique_trajectories`), bijectivity of `π_s` (`interchangePi_bijective`),
-the KMT coupling for Poisson increments (`poisson_kmt_coupling`), and the strong approximation that
-replaces Theorem 7.5 of the paper (`x1theta_coupling`). They are the library's theorems of the same
-names in the namespace `ElboimSly`. Existence and uniqueness of trajectories is stated in `Defs/`, as
-`ElboimSly.existsUnique_trajectories` with the body `sorry`, because `interchangePi` is defined from
-it; the comparator configuration lists it under that name.
+dimensions* (arXiv:2211.17023v3), stated from Mathlib alone: Theorem 1 (`root_R2`), the bound
+`P(the cycle of 0 is finite) < 2/β` from its proof (`root_R1`), and Theorem 3.2 with (H1)–(H5)
+(`ind_main`); and four theorems behind them: existence and uniqueness of particle trajectories
+(`existsUnique_trajectories`), bijectivity of `π_s` (`interchangePi_bijective`), the KMT coupling for
+Poisson increments (`poisson_kmt_coupling`), and the strong approximation that replaces Theorem 7.5
+of the paper (`x1theta_coupling`).
 
-Every definition the statements use is in its own file under `Defs/`; these import Mathlib and one
-another only. Each theorem below has the body `sorry`. `Solution.lean` proves the same statements
-from the library, and leanprover/comparator checks that the two agree, definitions included. The
-statements and definitions are generated from those of the library by `scripts/build_challenge.py`.
+Every definition the statements use is given below, in the namespace `ElboimSly.Challenge`, with the
+text of the library's definition of the same name in `ElboimSly`. `existsUnique_trajectories` is stated
+among them because `interchangePi` is defined from it. Every proof is `sorry`. `Solution.lean` proves
+the same statements from the library, and leanprover/comparator checks that the two agree,
+definitions included. This file is generated from the library by `scripts/build_challenge.py`.
 -/
 """
 doc_s = """
 /-!
 # Solution: infinite cycles in the interchange process in five dimensions
 
-The seven statements of `Challenge.lean`, each proved by the corresponding theorem of the library
-(`ElboimSly/Provider/`), under the same names. Generated by `scripts/build_challenge.py`.
+The definitions of `Challenge.lean`, verbatim, and its seven statements, each proved by the library's
+theorem of the same name in `ElboimSly` (`ElboimSly/Provider/`): every definition here unfolds to the
+library's definition of the same name. Generated by `scripts/build_challenge.py`.
 -/
 """
 all_deps = sorted({d for _, _, _, ds, _ in thm_bodies for d in ds})
-chal = HEADER + "module\n\npublic import Mathlib\n" + "".join(
-    f"public import ElboimSlyChallenges.ElboimSly.Defs.{d}\n" for d in all_deps) + doc_c
+order, seen = [], set()
+def visit(n):
+    if n in seen: return
+    seen.add(n)
+    for m in sorted(def_deps[n]): visit(m)
+    order.append(n)
+for n in sorted(def_blocks): visit(n)
+# The solution repeats the definitions verbatim, so that they elaborate exactly as in the challenge
+# (same text, order and imports; Lean names the auxiliary proofs inside definitions per file), and
+# proves every theorem by the library's theorem of the same name: the definitions of
+# `ElboimSly.Challenge` unfold to those of the library.
+DEFS_OPEN = "\n/-! ## Definitions -/\n\npublic section\n\nnamespace ElboimSly.Challenge\n"
+DEFS_CLOSE = "\nend ElboimSly.Challenge\n\nend\n\n/-! ## Theorems -/\n"
+chal = HEADER + "module\n\npublic import Mathlib\n" + doc_c + DEFS_OPEN
 sol = HEADER + "module\n\npublic import Mathlib\n" + "".join(
-    f"public import ElboimSly.Frozen.Defs.{d}\n" for d in all_deps) + "".join(
-    f"public import {pv}\n" for _, _, _, _, ps in thm_bodies for pv in ps) + doc_s
+    f"public import {pv}\n" for pv in sorted({pv for _, _, _, _, ps in thm_bodies for pv in ps} | def_provs)) + doc_s + DEFS_OPEN
+for n in order:
+    chal += f"\n{def_blocks[n]}\n"
+    sol += f"\n{sol_blocks[n]}\n"
+chal += DEFS_CLOSE
+sol += DEFS_CLOSE
 for name, c, s, _, _ in thm_bodies:
-    chal += f"\n/-! ## `{name}` -/\n\n{c}\n"
-    sol += f"\n/-! ## `{name}` -/\n\n{s}\n"
+    chal += f"\n{c}\n"
+    sol += f"\n{s}\n"
 (DST / "Challenge.lean").write_text(chal, encoding="utf8")
 (DST / "Solution.lean").write_text(sol, encoding="utf8")
-print(f"wrote {defs_done} definition mirrors, Challenge.lean and Solution.lean ({len(thm_bodies)} theorems)")
+print(f"wrote Challenge.lean ({len(order)} definition blocks, {len(thm_bodies)} theorems, "
+      f"{chal.count(chr(10))} lines, {len(chal.encode())} bytes) and Solution.lean")
